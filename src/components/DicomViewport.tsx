@@ -40,10 +40,13 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
 
   // Windowing & Display presets
-  const [windowPreset, setWindowPreset] = useState<'default' | 'lung' | 'bone' | 'softTissue' | 'brain'>('default');
+  const [windowPreset, setWindowPreset] = useState<'default' | 'lung' | 'bone' | 'softTissue' | 'brain' | 'spine'>('default');
   const [windowWidth, setWindowWidth] = useState(study.metadata.windowWidth);
   const [windowCenter, setWindowCenter] = useState(study.metadata.windowCenter);
   const [isInverted, setIsInverted] = useState(false);
+
+  // Dynamic image canvas dimensions
+  const [canvasDims, setCanvasDims] = useState<{ width: number; height: number }>({ width: 1024, height: 1024 });
 
   // AI Overlays
   const [showHeatmap, setShowHeatmap] = useState(true);
@@ -64,10 +67,8 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
   const imageObjRef = useRef<HTMLImageElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Reset viewport when study changes
+  // Reset viewport and fit image when study changes
   useEffect(() => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
     setWindowWidth(study.metadata.windowWidth);
     setWindowCenter(study.metadata.windowCenter);
     setWindowPreset('default');
@@ -81,13 +82,35 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
     img.onload = () => {
       imageObjRef.current = img;
       setImageLoaded(true);
-      renderBaseImage();
-      renderHeatmap();
+      const natW = img.naturalWidth || 1024;
+      const natH = img.naturalHeight || 1024;
+      setCanvasDims({ width: natW, height: natH });
+
+      // Auto-fit to viewport container
+      if (containerRef.current) {
+        const cRect = containerRef.current.getBoundingClientRect();
+        if (cRect.width > 0 && cRect.height > 0) {
+          const scaleX = (cRect.width - 32) / natW;
+          const scaleY = (cRect.height - 32) / natH;
+          const fitZoom = Math.min(scaleX, scaleY, 1.0);
+          setZoom(fitZoom);
+          setPan({
+            x: Math.max((cRect.width - natW * fitZoom) / 2, 0),
+            y: Math.max((cRect.height - natH * fitZoom) / 2, 0),
+          });
+        }
+      } else {
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
+      }
+
+      renderBaseImage(natW, natH);
+      renderHeatmap(natW, natH);
     };
   }, [study.id, study.imageUrl]);
 
   // Handle Preset changes
-  const applyPreset = (preset: 'default' | 'lung' | 'bone' | 'softTissue' | 'brain') => {
+  const applyPreset = (preset: 'default' | 'lung' | 'bone' | 'softTissue' | 'brain' | 'spine') => {
     setWindowPreset(preset);
     if (preset === 'default') {
       setWindowWidth(study.metadata.windowWidth);
@@ -104,6 +127,9 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
     } else if (preset === 'brain') {
       setWindowWidth(140);
       setWindowCenter(40);
+    } else if (preset === 'spine') {
+      setWindowWidth(1200);
+      setWindowCenter(450);
     }
   };
 
@@ -113,10 +139,10 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
       renderBaseImage();
       renderHeatmap();
     }
-  }, [imageLoaded, windowWidth, windowCenter, isInverted, heatmapOpacity, showHeatmap, study]);
+  }, [imageLoaded, windowWidth, windowCenter, isInverted, heatmapOpacity, showHeatmap, study, canvasDims]);
 
   // Render base radiograph with window/level contrast
-  const renderBaseImage = () => {
+  const renderBaseImage = (targetW?: number, targetH?: number) => {
     const canvas = canvasRef.current;
     const img = imageObjRef.current;
     if (!canvas || !img) return;
@@ -124,10 +150,13 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = 1024;
-    canvas.height = 1024;
+    const w = targetW || img.naturalWidth || canvasDims.width;
+    const h = targetH || img.naturalHeight || canvasDims.height;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = w;
+    canvas.height = h;
+
+    ctx.clearRect(0, 0, w, h);
 
     // Compute contrast/brightness filter based on Window Width and Window Center
     const contrastRatio = Math.min(Math.max(350 / (windowWidth || 350), 0.5), 2.5);
@@ -137,29 +166,33 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
       isInverted ? 'invert(100%)' : ''
     }`;
 
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, w, h);
     ctx.filter = 'none';
   };
 
   // Render Grad-CAM Heatmap onto overlay canvas
-  const renderHeatmap = () => {
+  const renderHeatmap = (targetW?: number, targetH?: number) => {
     const canvas = heatmapCanvasRef.current;
+    const img = imageObjRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = 1024;
-    canvas.height = 1024;
+    const w = targetW || img?.naturalWidth || canvasDims.width;
+    const h = targetH || img?.naturalHeight || canvasDims.height;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = w;
+    canvas.height = h;
+
+    ctx.clearRect(0, 0, w, h);
 
     if (!showHeatmap || !study.anomalyDetected || !hasAnalyzed) return;
 
     const { x, y, radius, intensity } = study.heatmapCenter;
-    const cx = x * canvas.width;
-    const cy = y * canvas.height;
-    const radPx = radius * canvas.width * 1.5;
+    const cx = x * w;
+    const cy = y * h;
+    const radPx = radius * Math.min(w, h) * 1.5;
 
     // Multi-stop Jet/Turbo thermal gradient
     const gradient = ctx.createRadialGradient(cx, cy, 2, cx, cy, radPx);
@@ -214,20 +247,22 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
-      const normX = Math.min(Math.max((e.clientX - rect.left - pan.x) / (rect.width * zoom), 0), 1);
-      const normY = Math.min(Math.max((e.clientY - rect.top - pan.y) / (rect.height * zoom), 0), 1);
+      const normX = Math.min(Math.max((e.clientX - rect.left - pan.x) / (canvasDims.width * zoom), 0), 1);
+      const normY = Math.min(Math.max((e.clientY - rect.top - pan.y) / (canvasDims.height * zoom), 0), 1);
       // Realistic estimated HU based on region and anomaly center
       const distToAnomaly = Math.hypot(normX - study.heatmapCenter.x, normY - study.heatmapCenter.y);
       let calculatedHu = -450 + Math.round((1 - normY) * 350); // lung baseline
       if (study.bodyPart === 'LEG') {
         calculatedHu = 380 + Math.round((1 - Math.abs(normX - 0.5)) * 600); // cortical bone
+      } else if (study.bodyPart === 'SPINE') {
+        calculatedHu = 65 + Math.round((1 - Math.abs(normX - 0.5)) * 140); // spine canal/disc
       }
       if (distToAnomaly < 0.12) {
-        calculatedHu = study.boundingBoxes[0]?.densityHu || 65;
+        calculatedHu = study.boundingBoxes[0]?.densityHu || 45;
       }
       setHoverData({
-        x: Math.round(normX * 1024),
-        y: Math.round(normY * 1024),
+        x: Math.round(normX * canvasDims.width),
+        y: Math.round(normY * canvasDims.height),
         hu: calculatedHu,
       });
     }
@@ -276,8 +311,22 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
   };
 
   const resetViewport = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
+    if (containerRef.current && imageObjRef.current) {
+      const natW = imageObjRef.current.naturalWidth || 1024;
+      const natH = imageObjRef.current.naturalHeight || 1024;
+      const cRect = containerRef.current.getBoundingClientRect();
+      const scaleX = (cRect.width - 32) / natW;
+      const scaleY = (cRect.height - 32) / natH;
+      const fitZoom = Math.min(scaleX, scaleY, 1.0);
+      setZoom(fitZoom);
+      setPan({
+        x: Math.max((cRect.width - natW * fitZoom) / 2, 0),
+        y: Math.max((cRect.height - natH * fitZoom) / 2, 0),
+      });
+    } else {
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+    }
     applyPreset('default');
     setIsInverted(false);
     setMeasurements([]);
@@ -350,6 +399,12 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
             onClick={() => applyPreset('brain')}
           >
             Brain
+          </button>
+          <button
+            className={`preset-pill ${windowPreset === 'spine' ? 'active' : ''}`}
+            onClick={() => applyPreset('spine')}
+          >
+            Spine
           </button>
         </div>
 
@@ -436,6 +491,8 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
         <div
           className="canvas-transform-layer"
           style={{
+            width: `${canvasDims.width}px`,
+            height: `${canvasDims.height}px`,
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
           }}
@@ -481,10 +538,10 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
           {hasAnalyzed &&
             showBoundingBoxes &&
             study.boundingBoxes.map((box, idx) => {
-              const leftPx = (box.x / 100) * 1024;
-              const topPx = (box.y / 100) * 1024;
-              const widthPx = (box.width / 100) * 1024;
-              const heightPx = (box.height / 100) * 1024;
+              const leftPx = (box.x / 100) * canvasDims.width;
+              const topPx = (box.y / 100) * canvasDims.height;
+              const widthPx = (box.width / 100) * canvasDims.width;
+              const heightPx = (box.height / 100) * canvasDims.height;
 
               return (
                 <div
@@ -726,24 +783,22 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
 
         .canvas-transform-layer {
           position: absolute;
-          width: 1024px;
-          height: 1024px;
         }
 
         .dicom-base-canvas {
           position: absolute;
           top: 0;
           left: 0;
-          width: 1024px;
-          height: 1024px;
+          width: 100%;
+          height: 100%;
         }
 
         .dicom-heatmap-canvas {
           position: absolute;
           top: 0;
           left: 0;
-          width: 1024px;
-          height: 1024px;
+          width: 100%;
+          height: 100%;
           pointer-events: none;
           mix-blend-mode: screen;
         }
@@ -752,8 +807,8 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
           position: absolute;
           top: 0;
           left: 0;
-          width: 1024px;
-          height: 1024px;
+          width: 100%;
+          height: 100%;
           pointer-events: none;
         }
 
