@@ -1,22 +1,36 @@
 import React, { useState } from 'react';
 import { CLINICAL_STUDIES } from './data/studies';
 import type { ClinicalStudy } from './types';
-import { Navbar } from './components/Navbar';
+import { Navbar, type AppSection } from './components/Navbar';
 import { StudySelector } from './components/StudySelector';
 import { DicomViewport } from './components/DicomViewport';
-import { AnalysisPanel } from './components/AnalysisPanel';
+import { FindingsTab } from './components/AnalysisTabs/FindingsTab';
+import { PatientHubSection } from './components/Sections/PatientHubSection';
+import { PrognosisStudioSection } from './components/Sections/PrognosisStudioSection';
+import { TrainingStudioSection } from './components/Sections/TrainingStudioSection';
+import { ReportSection } from './components/Sections/ReportSection';
 import confetti from 'canvas-confetti';
+import { Clock, Activity, ArrowRight } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [studies, setStudies] = useState<ClinicalStudy[]>(CLINICAL_STUDIES);
   const [selectedStudy, setSelectedStudy] = useState<ClinicalStudy>(CLINICAL_STUDIES[0]);
-  const [activeTab, setActiveTab] = useState<'findings' | 'prognosis' | 'metadata' | 'training'>('findings');
+  const [activeSection, setActiveSection] = useState<AppSection>('patients');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(true);
 
   const handleSelectStudy = (study: ClinicalStudy) => {
     setSelectedStudy(study);
     setHasAnalyzed(true);
+  };
+
+  const handleSelectStudyById = (studyId: string) => {
+    const found = studies.find((s) => s.id === studyId);
+    if (found) {
+      setSelectedStudy(found);
+      setHasAnalyzed(true);
+      setActiveSection('workstation');
+    }
   };
 
   const handleRunAnalysis = () => {
@@ -145,57 +159,128 @@ export const App: React.FC = () => {
     setStudies((prev) => [newStudy, ...prev]);
     setSelectedStudy(newStudy);
     setHasAnalyzed(false);
+    setActiveSection('workstation');
   };
 
   return (
     <div className="app-shell">
-      {/* Top Main Navigation */}
+      {/* Top Global Navigation with Clean Sections */}
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
         isAnalyzing={isAnalyzing}
+        selectedPatientName={selectedStudy.metadata.patientName}
       />
 
-      {/* Case Selector Strip */}
-      <StudySelector
-        studies={studies}
-        selectedStudy={selectedStudy}
-        onSelectStudy={handleSelectStudy}
-        onUploadCustomImage={handleUploadCustomImage}
-        onRunAnalysis={handleRunAnalysis}
-        isAnalyzing={isAnalyzing}
-      />
-
-      {/* Main Radiology Workstation Split Grid */}
-      <main className="main-workspace-grid">
-        {/* Left Side: DICOM Viewport Workstation */}
-        <section className="viewport-column">
-          <DicomViewport
-            study={selectedStudy}
-            isAnalyzing={isAnalyzing}
-            hasAnalyzed={hasAnalyzed}
+      {/* Main Section Content Area */}
+      <div className="section-body-viewport">
+        {/* 1. PATIENT CASES & ONBOARDING HUB */}
+        {activeSection === 'patients' && (
+          <PatientHubSection
+            studies={studies}
+            selectedStudy={selectedStudy}
+            onSelectStudy={handleSelectStudy}
+            onOpenWorkstation={(study) => {
+              handleSelectStudy(study);
+              setActiveSection('workstation');
+            }}
+            onOpenPrognosis={(study) => {
+              handleSelectStudy(study);
+              setActiveSection('prognosis');
+            }}
+            onUploadCustomImage={handleUploadCustomImage}
           />
-        </section>
+        )}
 
-        {/* Right Side: Clinical Intelligence & Training Panel */}
-        <section className="analysis-column">
-          <AnalysisPanel
-            study={selectedStudy}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            hasAnalyzed={hasAnalyzed}
-            isAnalyzing={isAnalyzing}
-            onRunAnalysis={handleRunAnalysis}
-            onSelectStudyById={(id) => {
-              const found = studies.find((s) => s.id === id);
-              if (found) {
-                setSelectedStudy(found);
-                setHasAnalyzed(true);
-              }
+        {/* 2. FOCUSED DIAGNOSTIC PACS WORKSTATION */}
+        {activeSection === 'workstation' && (
+          <div className="workstation-view-container">
+            {/* Quick Study Switcher Strip */}
+            <StudySelector
+              studies={studies}
+              selectedStudy={selectedStudy}
+              onSelectStudy={handleSelectStudy}
+              onUploadCustomImage={handleUploadCustomImage}
+              onRunAnalysis={handleRunAnalysis}
+              isAnalyzing={isAnalyzing}
+            />
+
+            {/* Split Screen: DICOM Canvas (Left) & Focused Findings (Right) */}
+            <div className="workstation-split-grid">
+              <div className="workstation-canvas-pane">
+                <DicomViewport
+                  study={selectedStudy}
+                  isAnalyzing={isAnalyzing}
+                  hasAnalyzed={hasAnalyzed}
+                />
+              </div>
+
+              <div className="workstation-findings-pane">
+                <div className="findings-pane-header">
+                  <div className="header-title-row">
+                    <Activity size={16} className="text-cyan" />
+                    <span>DL Pathology Findings</span>
+                  </div>
+                  <button
+                    className="btn-prognosis-jump"
+                    onClick={() => setActiveSection('prognosis')}
+                    title="Jump to 5-Year Organ Health Studio"
+                  >
+                    <Clock size={13} />
+                    <span>5-Yr Prognosis</span>
+                    <ArrowRight size={13} />
+                  </button>
+                </div>
+
+                <div className="findings-scroll-content">
+                  <FindingsTab
+                    study={selectedStudy}
+                    hasAnalyzed={hasAnalyzed}
+                    isAnalyzing={isAnalyzing}
+                    onRunAnalysis={handleRunAnalysis}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. 5-YEAR PROGNOSIS & LONGEVITY STUDIO */}
+        {activeSection === 'prognosis' && (
+          <PrognosisStudioSection
+            studies={studies}
+            selectedStudy={selectedStudy}
+            onSelectStudy={handleSelectStudy}
+            onOpenWorkstation={(study) => {
+              handleSelectStudy(study);
+              setActiveSection('workstation');
             }}
           />
-        </section>
-      </main>
+        )}
+
+        {/* 4. KAGGLE AI TRAINING STUDIO */}
+        {activeSection === 'training' && (
+          <TrainingStudioSection
+            onSelectStudyById={(id) => {
+              handleSelectStudyById(id);
+              setActiveSection('workstation');
+            }}
+          />
+        )}
+
+        {/* 5. CLINICAL REPORT & DICOM TAGS */}
+        {activeSection === 'report' && (
+          <ReportSection
+            studies={studies}
+            selectedStudy={selectedStudy}
+            onSelectStudy={handleSelectStudy}
+            onOpenWorkstation={(study) => {
+              handleSelectStudy(study);
+              setActiveSection('workstation');
+            }}
+          />
+        )}
+      </div>
 
       <style>{`
         .app-shell {
@@ -207,51 +292,99 @@ export const App: React.FC = () => {
           background: var(--bg-darkest);
         }
 
-        .main-workspace-grid {
+        .section-body-viewport {
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .workstation-view-container {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          overflow: hidden;
+        }
+
+        .workstation-split-grid {
           display: grid;
-          grid-template-columns: minmax(360px, 44%) minmax(520px, 56%);
+          grid-template-columns: minmax(400px, 54%) minmax(440px, 46%);
           flex: 1;
           overflow: hidden;
         }
 
-        .viewport-column {
+        .workstation-canvas-pane {
           height: 100%;
           overflow: hidden;
-          display: flex;
-          flex-direction: column;
           border-right: 1px solid var(--border-subtle);
+          display: flex;
+          flex-direction: column;
         }
 
-        .analysis-column {
+        .workstation-findings-pane {
           height: 100%;
           overflow: hidden;
           display: flex;
           flex-direction: column;
-          min-width: 0;
+          background: rgba(10, 16, 32, 0.95);
         }
 
-        @media (max-width: 1280px) {
-          .main-workspace-grid {
-            grid-template-columns: 48% 52%;
-          }
+        .findings-pane-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 16px;
+          border-bottom: 1px solid var(--border-subtle);
+          background: rgba(7, 12, 24, 0.95);
+        }
+
+        .header-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 0.84rem;
+          font-weight: 700;
+          color: #ffffff;
+        }
+
+        .btn-prognosis-jump {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 10px;
+          background: rgba(6, 182, 212, 0.12);
+          border: 1px solid rgba(6, 182, 212, 0.3);
+          border-radius: var(--radius-sm);
+          color: var(--cyan-bright);
+          font-size: 0.74rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .btn-prognosis-jump:hover {
+          background: var(--cyan-primary);
+          color: #000000;
+        }
+
+        .findings-scroll-content {
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
         }
 
         @media (max-width: 960px) {
-          .app-shell {
-            height: auto;
-            overflow-y: auto;
-          }
-          .main-workspace-grid {
+          .workstation-split-grid {
             display: flex;
             flex-direction: column;
             height: auto;
           }
-          .viewport-column {
-            height: 540px;
+          .workstation-canvas-pane {
+            height: 520px;
           }
-          .analysis-column {
+          .workstation-findings-pane {
             height: auto;
-            min-height: 800px;
           }
         }
       `}</style>

@@ -1,17 +1,34 @@
 import React from 'react';
-import { Activity, Cpu, Sparkles, Sliders, GitBranch } from 'lucide-react';
+import {
+  Activity,
+  Cpu,
+  Sparkles,
+  GitBranch,
+  Users,
+  LayoutDashboard,
+  Clock,
+  FileText,
+} from 'lucide-react';
+
+export type AppSection = 'patients' | 'workstation' | 'prognosis' | 'training' | 'report';
 
 interface NavbarProps {
-  activeTab: 'findings' | 'prognosis' | 'metadata' | 'training';
-  setActiveTab: (tab: 'findings' | 'prognosis' | 'metadata' | 'training') => void;
+  activeSection: AppSection;
+  setActiveSection: (section: AppSection) => void;
   isAnalyzing: boolean;
+  selectedPatientName: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnalyzing }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  activeSection,
+  setActiveSection,
+  isAnalyzing,
+  selectedPatientName,
+}) => {
   return (
     <header className="navbar-container">
       <div className="navbar-left">
-        <div className="brand-badge">
+        <div className="brand-badge" onClick={() => setActiveSection('patients')} style={{ cursor: 'pointer' }}>
           <div className="brand-icon-wrapper">
             <Activity className="brand-icon" size={22} />
             <div className="brand-pulse" />
@@ -20,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
             <div className="brand-title">
               <span>LuminaRad</span> <span className="brand-highlight">PACS</span>
             </div>
-            <div className="brand-subtitle">Clinical DICOM Diagnostic & 5-Yr Prognosis Workstation</div>
+            <div className="brand-subtitle">Clinical Diagnostic & 5-Yr Prognosis Suite</div>
           </div>
         </div>
 
@@ -28,12 +45,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
           <div className="telemetry-pill">
             <span className="telemetry-dot online" />
             <span className="telemetry-label">PACS Core:</span>
-            <span className="telemetry-value">ONLINE (104)</span>
+            <span className="telemetry-value">ONLINE</span>
           </div>
           <div className="telemetry-pill">
             <Cpu size={13} className="telemetry-icon" />
             <span className="telemetry-label">DL Vision:</span>
-            <span className="telemetry-value">DenseNet-121 / ViT</span>
+            <span className="telemetry-value">DenseNet-121</span>
           </div>
           {isAnalyzing && (
             <div className="telemetry-pill analyzing">
@@ -46,24 +63,60 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
         </div>
       </div>
 
-      <div className="navbar-right">
-        {/* Navigation Quick Switches */}
-        <div className="nav-mode-selector">
+      {/* Center Nav: Clear Navigable Sections */}
+      <nav className="navbar-center">
+        <div className="nav-sections-tabs">
           <button
-            className={`nav-mode-btn ${activeTab !== 'training' ? 'active' : ''}`}
-            onClick={() => setActiveTab('findings')}
+            className={`nav-tab-btn ${activeSection === 'patients' ? 'active' : ''}`}
+            onClick={() => setActiveSection('patients')}
           >
-            <Sliders size={14} />
-            <span>Radiology Workstation</span>
+            <Users size={14} />
+            <span>Patient Cases</span>
           </button>
+
           <button
-            className={`nav-mode-btn training-highlight ${activeTab === 'training' ? 'active' : ''}`}
-            onClick={() => setActiveTab('training')}
+            className={`nav-tab-btn ${activeSection === 'workstation' ? 'active' : ''}`}
+            onClick={() => setActiveSection('workstation')}
+          >
+            <LayoutDashboard size={14} />
+            <span>Diagnostic Workstation</span>
+          </button>
+
+          <button
+            className={`nav-tab-btn ${activeSection === 'prognosis' ? 'active' : ''}`}
+            onClick={() => setActiveSection('prognosis')}
+          >
+            <Clock size={14} />
+            <span>5-Yr Prognosis</span>
+          </button>
+
+          <button
+            className={`nav-tab-btn training-highlight ${activeSection === 'training' ? 'active' : ''}`}
+            onClick={() => setActiveSection('training')}
           >
             <Sparkles size={14} />
-            <span>AI Training Studio</span>
-            <span className="kbd-badge">Kaggle</span>
+            <span>Kaggle AI Studio</span>
           </button>
+
+          <button
+            className={`nav-tab-btn ${activeSection === 'report' ? 'active' : ''}`}
+            onClick={() => setActiveSection('report')}
+          >
+            <FileText size={14} />
+            <span>Report & Tags</span>
+          </button>
+        </div>
+      </nav>
+
+      <div className="navbar-right">
+        {/* Active Patient Indicator */}
+        <div
+          className="active-patient-chip font-mono"
+          onClick={() => setActiveSection('workstation')}
+          title="Current Loaded Patient"
+        >
+          <span className="chip-lead">PATIENT:</span>
+          <span className="chip-name">{selectedPatientName}</span>
         </div>
 
         {/* GitHub link directly to user repo */}
@@ -74,7 +127,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
           className="github-repo-link"
           title="View Source on GitHub"
         >
-          <GitBranch size={16} />
+          <GitBranch size={15} />
           <span>luminarad-pacs</span>
         </a>
       </div>
@@ -84,19 +137,20 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 12px 24px;
-          background: rgba(9, 14, 28, 0.85);
+          padding: 10px 24px;
+          background: rgba(9, 14, 28, 0.95);
           backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border-subtle);
           position: sticky;
           top: 0;
           z-index: 100;
+          gap: 16px;
         }
 
         .navbar-left {
           display: flex;
           align-items: center;
-          gap: 24px;
+          gap: 20px;
         }
 
         .brand-badge {
@@ -107,8 +161,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
 
         .brand-icon-wrapper {
           position: relative;
-          width: 38px;
-          height: 38px;
+          width: 36px;
+          height: 36px;
           border-radius: var(--radius-md);
           background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(168, 85, 247, 0.2));
           border: 1px solid rgba(6, 182, 212, 0.4);
@@ -128,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
         }
 
         .brand-title {
-          font-size: 1.22rem;
+          font-size: 1.15rem;
           font-weight: 800;
           letter-spacing: -0.5px;
           line-height: 1.1;
@@ -140,27 +194,26 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
         }
 
         .brand-subtitle {
-          font-size: 0.72rem;
+          font-size: 0.68rem;
           color: var(--text-secondary);
           font-weight: 400;
-          letter-spacing: 0.2px;
         }
 
         .system-telemetry {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
         }
 
         .telemetry-pill {
           display: flex;
           align-items: center;
           gap: 6px;
-          padding: 4px 10px;
+          padding: 3px 8px;
           border-radius: 999px;
           background: rgba(255, 255, 255, 0.03);
           border: 1px solid rgba(255, 255, 255, 0.06);
-          font-size: 0.75rem;
+          font-size: 0.72rem;
           font-family: var(--font-mono);
         }
 
@@ -193,26 +246,25 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
           color: var(--purple-ai);
         }
 
-        .navbar-right {
+        .navbar-center {
           display: flex;
           align-items: center;
-          gap: 14px;
         }
 
-        .nav-mode-selector {
+        .nav-sections-tabs {
           display: flex;
-          background: rgba(14, 23, 42, 0.7);
-          padding: 3px;
+          background: rgba(14, 23, 42, 0.8);
+          padding: 4px;
           border-radius: var(--radius-md);
           border: 1px solid var(--border-subtle);
           gap: 4px;
         }
 
-        .nav-mode-btn {
+        .nav-tab-btn {
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 6px 12px;
+          gap: 7px;
+          padding: 7px 13px;
           background: transparent;
           border: none;
           color: var(--text-secondary);
@@ -221,32 +273,62 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
           border-radius: var(--radius-sm);
           cursor: pointer;
           transition: all 0.2s ease;
+          white-space: nowrap;
         }
 
-        .nav-mode-btn:hover {
+        .nav-tab-btn:hover {
           color: #ffffff;
+          background: rgba(255, 255, 255, 0.04);
         }
 
-        .nav-mode-btn.active {
-          background: rgba(6, 182, 212, 0.15);
+        .nav-tab-btn.active {
+          background: rgba(6, 182, 212, 0.16);
           color: var(--cyan-bright);
-          border: 1px solid rgba(6, 182, 212, 0.3);
+          border: 1px solid rgba(6, 182, 212, 0.35);
+          box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
         }
 
-        .nav-mode-btn.training-highlight.active {
-          background: rgba(168, 85, 247, 0.18);
+        .nav-tab-btn.training-highlight.active {
+          background: rgba(168, 85, 247, 0.2);
           color: #c084fc;
-          border: 1px solid rgba(168, 85, 247, 0.4);
+          border: 1px solid rgba(168, 85, 247, 0.45);
         }
 
-        .kbd-badge {
-          background: rgba(168, 85, 247, 0.25);
-          color: #e9d5ff;
-          font-size: 0.65rem;
-          padding: 1px 5px;
-          border-radius: 4px;
+        .navbar-right {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .active-patient-chip {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 10px;
+          background: rgba(6, 182, 212, 0.08);
+          border: 1px solid rgba(6, 182, 212, 0.25);
+          border-radius: var(--radius-md);
+          font-size: 0.72rem;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .active-patient-chip:hover {
+          background: rgba(6, 182, 212, 0.15);
+          border-color: var(--cyan-bright);
+        }
+
+        .chip-lead {
+          color: var(--text-muted);
+        }
+
+        .chip-name {
+          color: var(--cyan-bright);
           font-weight: 700;
-          letter-spacing: 0.5px;
+          max-width: 140px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .github-repo-link {
@@ -259,7 +341,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
           border: 1px solid var(--border-subtle);
           color: var(--text-primary);
           text-decoration: none;
-          font-size: 0.8rem;
+          font-size: 0.78rem;
           font-weight: 500;
           transition: all 0.2s ease;
         }
@@ -270,7 +352,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isAnaly
           color: #ffffff;
         }
 
-        @media (max-width: 960px) {
+        @media (max-width: 1180px) {
           .system-telemetry {
             display: none;
           }
