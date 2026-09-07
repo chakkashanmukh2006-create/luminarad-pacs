@@ -1,5 +1,5 @@
 export type Modality = 'DX' | 'CR' | 'CT' | 'MR';
-export type BodyPart = 'CHEST' | 'LEG' | 'EXTREMITY' | 'KNEE' | 'SPINE';
+export type BodyPart = 'CHEST' | 'LEG' | 'EXTREMITY' | 'KNEE' | 'SPINE' | 'BRAIN' | 'ABDOMEN';
 export type Severity = 'critical' | 'high' | 'moderate' | 'normal';
 
 export interface BoundingBox {

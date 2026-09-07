@@ -40,7 +40,7 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
 
   // Windowing & Display presets
-  const [windowPreset, setWindowPreset] = useState<'default' | 'lung' | 'bone' | 'softTissue'>('default');
+  const [windowPreset, setWindowPreset] = useState<'default' | 'lung' | 'bone' | 'softTissue' | 'brain'>('default');
   const [windowWidth, setWindowWidth] = useState(study.metadata.windowWidth);
   const [windowCenter, setWindowCenter] = useState(study.metadata.windowCenter);
   const [isInverted, setIsInverted] = useState(false);
@@ -87,7 +87,7 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
   }, [study.id, study.imageUrl]);
 
   // Handle Preset changes
-  const applyPreset = (preset: 'default' | 'lung' | 'bone' | 'softTissue') => {
+  const applyPreset = (preset: 'default' | 'lung' | 'bone' | 'softTissue' | 'brain') => {
     setWindowPreset(preset);
     if (preset === 'default') {
       setWindowWidth(study.metadata.windowWidth);
@@ -101,6 +101,9 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
     } else if (preset === 'softTissue') {
       setWindowWidth(400);
       setWindowCenter(50);
+    } else if (preset === 'brain') {
+      setWindowWidth(140);
+      setWindowCenter(40);
     }
   };
 
@@ -341,6 +344,12 @@ export const DicomViewport: React.FC<DicomViewportProps> = ({
             onClick={() => applyPreset('softTissue')}
           >
             Soft
+          </button>
+          <button
+            className={`preset-pill ${windowPreset === 'brain' ? 'active' : ''}`}
+            onClick={() => applyPreset('brain')}
+          >
+            Brain
           </button>
         </div>
 
