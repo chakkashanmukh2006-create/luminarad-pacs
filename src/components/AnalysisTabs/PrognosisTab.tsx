@@ -8,7 +8,15 @@ import {
   Calendar,
   Activity,
   Sliders,
-  Zap
+  Zap,
+  Sparkles,
+  Stethoscope,
+  Apple,
+  CalendarCheck,
+  CheckSquare,
+  Square,
+  ShieldCheck,
+  ListChecks,
 } from 'lucide-react';
 
 interface PrognosisTabProps {
@@ -25,11 +33,16 @@ export const PrognosisTab: React.FC<PrognosisTabProps> = ({
   const { prognosis } = study;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Local state for interactive interventions
+  // Local state for interactive interventions (existing simulator)
   const [interventions, setInterventions] = useState(prognosis.interventions);
+  
+  // Local state for plain-language care plan tracking
+  const [completedRecIds, setCompletedRecIds] = useState<Set<string>>(new Set());
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<'all' | 'medical' | 'lifestyle' | 'milestone'>('all');
 
   useEffect(() => {
     setInterventions(prognosis.interventions);
+    setCompletedRecIds(new Set());
   }, [prognosis]);
 
   // Calculate current active benefit multiplier
@@ -203,6 +216,23 @@ export const PrognosisTab: React.FC<PrognosisTabProps> = ({
   }
 
   const ageDiff = calculatedBiologicalAge - prognosis.chronologicalAge;
+  const recommendations = prognosis.recommendationsPlan || [];
+  const filteredRecs = recommendations.filter((r) => {
+    if (activeCategoryFilter === 'all') return true;
+    return r.category === activeCategoryFilter;
+  });
+
+  const completedCount = recommendations.filter((r) => completedRecIds.has(r.id)).length;
+  const progressPercent = recommendations.length > 0 ? Math.round((completedCount / recommendations.length) * 100) : 0;
+
+  const toggleRecCompleted = (id: string) => {
+    setCompletedRecIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <div className="prognosis-tab-container">
@@ -257,6 +287,25 @@ export const PrognosisTab: React.FC<PrognosisTabProps> = ({
         </div>
       </div>
 
+      {/* Understandable Plain-Language Health Summary */}
+      {prognosis.plainLanguageSummary && (
+        <div className="prognosis-card plain-language-card">
+          <div className="plain-language-header">
+            <div className="plain-header-title">
+              <Sparkles size={16} className="text-cyan animate-pulse" />
+              <h4>In Simple Words: 5-Year Health Outlook</h4>
+            </div>
+            <span className="plain-language-pill">
+              <ShieldCheck size={12} />
+              Understandable to Anyone
+            </span>
+          </div>
+          <p className="plain-language-text">
+            {prognosis.plainLanguageSummary}
+          </p>
+        </div>
+      )}
+
       {/* 5-Year Trajectory Line Chart */}
       <div className="prognosis-card chart-card">
         <div className="chart-header">
@@ -280,6 +329,123 @@ export const PrognosisTab: React.FC<PrognosisTabProps> = ({
           <canvas ref={canvasRef} className="trajectory-canvas" />
         </div>
       </div>
+
+      {/* Actionable 5-Year Care Plan & Recommendations */}
+      {recommendations.length > 0 && (
+        <div className="prognosis-card recommendations-plan-card">
+          <div className="plan-header">
+            <div className="plan-title-wrap">
+              <ListChecks size={18} className="text-cyan" />
+              <div>
+                <h4 className="plan-main-heading">5-Year Actionable Care Plan & Suggestions</h4>
+                <p className="plan-sub-heading">
+                  Simple, structured recommendations for doctor visits, daily routine, and long-term recovery:
+                </p>
+              </div>
+            </div>
+
+            {/* Checklist Completion Badge */}
+            <div className="plan-progress-pill font-mono">
+              <span>{completedCount} of {recommendations.length} Steps Completed</span>
+              <div className="mini-progress-track">
+                <div className="mini-progress-fill" style={{ width: `${progressPercent}%` }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Category Filter Tabs */}
+          <div className="rec-filter-tabs">
+            <button
+              className={`rec-filter-btn ${activeCategoryFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveCategoryFilter('all')}
+            >
+              All Suggestions ({recommendations.length})
+            </button>
+            <button
+              className={`rec-filter-btn ${activeCategoryFilter === 'medical' ? 'active' : ''}`}
+              onClick={() => setActiveCategoryFilter('medical')}
+            >
+              <Stethoscope size={13} />
+              Doctor & Medical ({recommendations.filter((r) => r.category === 'medical').length})
+            </button>
+            <button
+              className={`rec-filter-btn ${activeCategoryFilter === 'lifestyle' ? 'active' : ''}`}
+              onClick={() => setActiveCategoryFilter('lifestyle')}
+            >
+              <Apple size={13} />
+              Daily Habits ({recommendations.filter((r) => r.category === 'lifestyle').length})
+            </button>
+            <button
+              className={`rec-filter-btn ${activeCategoryFilter === 'milestone' ? 'active' : ''}`}
+              onClick={() => setActiveCategoryFilter('milestone')}
+            >
+              <CalendarCheck size={13} />
+              Milestone Checkups ({recommendations.filter((r) => r.category === 'milestone').length})
+            </button>
+          </div>
+
+          {/* List of Recommendation Cards */}
+          <div className="recommendations-list">
+            {filteredRecs.map((rec) => {
+              const isCompleted = completedRecIds.has(rec.id);
+              return (
+                <div
+                  key={rec.id}
+                  className={`recommendation-card ${rec.category} ${isCompleted ? 'is-completed' : ''}`}
+                >
+                  <div className="rec-card-top">
+                    <button
+                      className="rec-checkbox-btn"
+                      onClick={() => toggleRecCompleted(rec.id)}
+                      title={isCompleted ? 'Mark as pending' : 'Mark as completed'}
+                    >
+                      {isCompleted ? (
+                        <CheckSquare size={18} className="text-emerald" />
+                      ) : (
+                        <Square size={18} className="text-muted" />
+                      )}
+                    </button>
+
+                    <div className="rec-title-row">
+                      <span className={`rec-title ${isCompleted ? 'strikethrough' : ''}`}>
+                        {rec.title}
+                      </span>
+                      <div className="rec-badges-wrap">
+                        <span
+                          className={`rec-urgency-badge ${
+                            rec.urgency.toLowerCase().includes('immediate')
+                              ? 'urgent'
+                              : rec.urgency.toLowerCase().includes('daily')
+                              ? 'routine'
+                              : 'milestone'
+                          }`}
+                        >
+                          {rec.urgency}
+                        </span>
+                        <span className="rec-impact-badge font-mono">
+                          {rec.healthImpactBadge}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rec-body">
+                    <div className="rec-simple-explain">
+                      <strong className="rec-explain-label">Why it matters (In Simple Words): </strong>
+                      <span>{rec.simpleExplanation}</span>
+                    </div>
+
+                    <div className="rec-action-step">
+                      <span className="rec-action-tag">ACTION TO TAKE</span>
+                      <span className="rec-action-text">{rec.actionStep}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Interactive Intervention Simulator */}
       <div className="prognosis-card simulator-card">
@@ -640,6 +806,311 @@ export const PrognosisTab: React.FC<PrognosisTabProps> = ({
         .bm-desc {
           font-size: 0.72rem;
           color: var(--text-muted);
+        }
+
+        /* Plain Language Summary Card */
+        .plain-language-card {
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(15, 23, 42, 0.88) 100%);
+          border: 1px solid rgba(6, 182, 212, 0.38);
+          box-shadow: 0 4px 20px rgba(6, 182, 212, 0.08);
+        }
+
+        .plain-language-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 8px;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .plain-header-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .plain-header-title h4 {
+          font-size: 0.88rem;
+          font-weight: 700;
+          color: #38bdf8;
+          letter-spacing: 0.3px;
+          margin: 0;
+        }
+
+        .plain-language-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: rgba(6, 182, 212, 0.15);
+          border: 1px solid rgba(6, 182, 212, 0.4);
+          color: #67e8f9;
+          font-size: 0.68rem;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 999px;
+          letter-spacing: 0.3px;
+        }
+
+        .plain-language-text {
+          font-size: 0.84rem;
+          line-height: 1.55;
+          color: #e2e8f0;
+          margin: 0;
+        }
+
+        /* Recommendations Plan Card */
+        .recommendations-plan-card {
+          border: 1px solid rgba(59, 130, 246, 0.28);
+          background: rgba(14, 23, 42, 0.75);
+        }
+
+        .plan-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 12px;
+          flex-wrap: wrap;
+        }
+
+        .plan-title-wrap {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .plan-main-heading {
+          font-size: 0.9rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0 0 2px 0;
+        }
+
+        .plan-sub-heading {
+          font-size: 0.76rem;
+          color: var(--text-secondary);
+          margin: 0;
+        }
+
+        .plan-progress-pill {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+          font-size: 0.72rem;
+          color: var(--text-secondary);
+        }
+
+        .mini-progress-track {
+          width: 110px;
+          height: 5px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 999px;
+          overflow: hidden;
+        }
+
+        .mini-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, var(--cyan-primary), var(--emerald-success));
+          transition: width 0.3s ease;
+        }
+
+        .rec-filter-tabs {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+          margin-bottom: 12px;
+        }
+
+        .rec-filter-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: rgba(30, 41, 59, 0.6);
+          border: 1px solid var(--border-subtle);
+          color: var(--text-secondary);
+          font-size: 0.72rem;
+          font-weight: 600;
+          padding: 4px 10px;
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .rec-filter-btn:hover {
+          background: rgba(51, 65, 85, 0.7);
+          color: var(--text-primary);
+        }
+
+        .rec-filter-btn.active {
+          background: rgba(6, 182, 212, 0.15);
+          border-color: rgba(6, 182, 212, 0.5);
+          color: var(--cyan-bright);
+        }
+
+        .recommendations-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .recommendation-card {
+          background: rgba(18, 28, 51, 0.5);
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: var(--radius-md);
+          padding: 12px 14px;
+          transition: all 0.2s ease;
+        }
+
+        .recommendation-card.medical {
+          border-left: 3px solid #38bdf8;
+        }
+
+        .recommendation-card.lifestyle {
+          border-left: 3px solid #10b981;
+        }
+
+        .recommendation-card.milestone {
+          border-left: 3px solid #a855f7;
+        }
+
+        .recommendation-card.is-completed {
+          opacity: 0.75;
+          background: rgba(16, 185, 129, 0.05);
+          border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .rec-card-top {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          margin-bottom: 8px;
+        }
+
+        .rec-checkbox-btn {
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          margin-top: 1px;
+          display: flex;
+          align-items: center;
+          color: var(--text-muted);
+          transition: color 0.15s ease;
+        }
+
+        .rec-checkbox-btn:hover {
+          color: var(--cyan-bright);
+        }
+
+        .rec-title-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .rec-title {
+          font-size: 0.86rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .rec-title.strikethrough {
+          text-decoration: line-through;
+          color: var(--text-secondary);
+        }
+
+        .rec-badges-wrap {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .rec-urgency-badge {
+          font-size: 0.65rem;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: 999px;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+
+        .rec-urgency-badge.urgent {
+          background: rgba(244, 63, 94, 0.15);
+          color: #fb7185;
+          border: 1px solid rgba(244, 63, 94, 0.4);
+        }
+
+        .rec-urgency-badge.routine {
+          background: rgba(245, 158, 11, 0.15);
+          color: #fbbf24;
+          border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .rec-urgency-badge.milestone {
+          background: rgba(168, 85, 247, 0.15);
+          color: #c084fc;
+          border: 1px solid rgba(168, 85, 247, 0.4);
+        }
+
+        .rec-impact-badge {
+          font-size: 0.66rem;
+          font-weight: 700;
+          color: #34d399;
+          background: rgba(16, 185, 129, 0.12);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          padding: 2px 7px;
+          border-radius: 4px;
+        }
+
+        .rec-body {
+          padding-left: 28px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .rec-simple-explain {
+          font-size: 0.78rem;
+          color: #cbd5e1;
+          line-height: 1.45;
+        }
+
+        .rec-explain-label {
+          color: #94a3b8;
+          font-weight: 600;
+        }
+
+        .rec-action-step {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+          background: rgba(15, 23, 42, 0.5);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          padding: 6px 10px;
+          border-radius: var(--radius-sm);
+          font-size: 0.78rem;
+        }
+
+        .rec-action-tag {
+          font-family: var(--font-mono);
+          font-size: 0.62rem;
+          font-weight: 800;
+          letter-spacing: 0.5px;
+          color: var(--cyan-bright);
+          background: rgba(6, 182, 212, 0.15);
+          padding: 1px 5px;
+          border-radius: 3px;
+          white-space: nowrap;
+        }
+
+        .rec-action-text {
+          color: #f1f5f9;
+          font-weight: 500;
         }
       `}</style>
     </div>

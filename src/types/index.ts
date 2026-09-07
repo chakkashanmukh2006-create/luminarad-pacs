@@ -28,6 +28,16 @@ export interface TrajectoryPoint {
   riskLevel: 'low' | 'moderate' | 'high' | 'critical';
 }
 
+export interface PrognosisRecommendation {
+  id: string;
+  category: 'medical' | 'lifestyle' | 'milestone';
+  title: string;
+  simpleExplanation: string;
+  actionStep: string;
+  urgency: 'Immediate (0-30 Days)' | 'Daily Routine' | 'Milestone Checkup';
+  healthImpactBadge: string;
+}
+
 export interface PrognosisData {
   chronologicalAge: number;
   biologicalOrganAge: number;
@@ -35,6 +45,8 @@ export interface PrognosisData {
   overallScore: number; // 0 - 100
   fiveYearSurvivalRate: number; // 0 - 100
   fiveYearComplicationRisk: number; // 0 - 100
+  plainLanguageSummary?: string;
+  recommendationsPlan?: PrognosisRecommendation[];
   trajectory: TrajectoryPoint[];
   biomarkers: {
     name: string;
