@@ -202,7 +202,7 @@ export const App: React.FC = () => {
 
         .main-workspace-grid {
           display: grid;
-          grid-template-columns: 1fr 480px;
+          grid-template-columns: minmax(360px, 44%) minmax(520px, 56%);
           flex: 1;
           overflow: hidden;
         }
@@ -212,23 +212,24 @@ export const App: React.FC = () => {
           overflow: hidden;
           display: flex;
           flex-direction: column;
+          border-right: 1px solid var(--border-subtle);
         }
 
         .analysis-column {
           height: 100%;
           overflow: hidden;
-          border-left: 1px solid var(--border-subtle);
           display: flex;
           flex-direction: column;
+          min-width: 0;
         }
 
-        @media (max-width: 1200px) {
+        @media (max-width: 1280px) {
           .main-workspace-grid {
-            grid-template-columns: 1fr 420px;
+            grid-template-columns: 48% 52%;
           }
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 960px) {
           .app-shell {
             height: auto;
             overflow-y: auto;
@@ -239,10 +240,11 @@ export const App: React.FC = () => {
             height: auto;
           }
           .viewport-column {
-            height: 600px;
+            height: 540px;
           }
           .analysis-column {
-            height: 800px;
+            height: auto;
+            min-height: 800px;
           }
         }
       `}</style>

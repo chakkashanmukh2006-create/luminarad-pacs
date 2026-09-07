@@ -341,6 +341,8 @@ export const PrognosisTab: React.FC<PrognosisTabProps> = ({
           flex-direction: column;
           gap: 14px;
           padding: 16px;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .prognosis-kpis-grid {
@@ -349,11 +351,17 @@ export const PrognosisTab: React.FC<PrognosisTabProps> = ({
           gap: 12px;
         }
 
+        .prognosis-kpis-grid > * {
+          min-width: 0;
+        }
+
         .prognosis-card {
           background: rgba(14, 23, 42, 0.65);
           border: 1px solid var(--border-subtle);
           border-radius: var(--radius-md);
           padding: 14px;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .card-header-mini {

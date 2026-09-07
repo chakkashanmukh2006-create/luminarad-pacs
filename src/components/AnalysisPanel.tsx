@@ -162,6 +162,8 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         .panel-content-body {
           flex: 1;
           overflow-y: auto;
+          overflow-x: hidden;
+          padding-bottom: 24px;
         }
       `}</style>
     </aside>

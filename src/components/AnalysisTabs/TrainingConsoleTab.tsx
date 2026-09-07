@@ -857,10 +857,63 @@ export const TrainingConsoleTab: React.FC = () => {
           margin-left: auto;
         }
 
+        .training-console-container {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          padding: 16px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .console-panel {
+          background: rgba(14, 23, 42, 0.65);
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-md);
+          padding: 14px;
+          min-width: 0;
+          box-sizing: border-box;
+        }
+
+        .dataset-selector-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+
+        .dataset-selector-grid > * {
+          min-width: 0;
+        }
+
+        .hyperparameters-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+        }
+
+        .hyperparameters-grid > * {
+          min-width: 0;
+        }
+
         .charts-grid-2col {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 10px;
+        }
+
+        .charts-grid-2col > * {
+          min-width: 0;
+        }
+
+        .matrix-and-stats-row {
+          display: grid;
+          grid-template-columns: 1.2fr 1fr;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .matrix-and-stats-row > * {
+          min-width: 0;
         }
 
         .chart-legend-mini {
