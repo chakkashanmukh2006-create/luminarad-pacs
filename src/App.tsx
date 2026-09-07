@@ -186,6 +186,13 @@ export const App: React.FC = () => {
             hasAnalyzed={hasAnalyzed}
             isAnalyzing={isAnalyzing}
             onRunAnalysis={handleRunAnalysis}
+            onSelectStudyById={(id) => {
+              const found = studies.find((s) => s.id === id);
+              if (found) {
+                setSelectedStudy(found);
+                setHasAnalyzed(true);
+              }
+            }}
           />
         </section>
       </main>

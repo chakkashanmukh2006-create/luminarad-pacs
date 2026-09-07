@@ -98,6 +98,15 @@ export interface ClinicalStudy {
   prognosis: PrognosisData;
 }
 
+export interface KaggleSample {
+  id: string;
+  studyId: string;
+  filename: string;
+  label: string;
+  patientId: string;
+  thumbnailUrl: string;
+}
+
 export interface KaggleDataset {
   id: string;
   name: string;
@@ -111,6 +120,7 @@ export interface KaggleDataset {
   classDistribution: { className: string; percentage: number }[];
   description: string;
   recommendedBackbones: string[];
+  sampleStudies?: KaggleSample[];
 }
 
 export interface EpochMetric {

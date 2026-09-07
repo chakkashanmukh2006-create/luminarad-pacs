@@ -14,10 +14,17 @@ import {
   Database,
   LineChart,
   ShieldCheck,
-  TrendingDown
+  TrendingDown,
+  HelpCircle,
+  Eye,
+  ExternalLink,
 } from 'lucide-react';
 
-export const TrainingConsoleTab: React.FC = () => {
+interface TrainingConsoleTabProps {
+  onSelectStudyById?: (studyId: string) => void;
+}
+
+export const TrainingConsoleTab: React.FC<TrainingConsoleTabProps> = ({ onSelectStudyById }) => {
   const [selectedDataset, setSelectedDataset] = useState<KaggleDataset>(KAGGLE_DATASETS[0]);
   const [modelBackbone, setModelBackbone] = useState('DenseNet-121 (CheXNet)');
   const [learningRate, setLearningRate] = useState('0.0001');
@@ -326,6 +333,21 @@ export const TrainingConsoleTab: React.FC = () => {
         </div>
       </div>
 
+      {/* FAQ Explanation Callout */}
+      <div className="dataset-faq-box">
+        <div className="faq-icon-wrap">
+          <HelpCircle size={16} />
+        </div>
+        <div className="faq-content">
+          <div className="faq-question">
+            Why 112,120 images here vs. active studies in the LHS PACS?
+          </div>
+          <p className="faq-answer">
+            The <strong>{selectedDataset.totalImages}</strong> ({selectedDataset.downloadSize}) represents the <em>complete offline Kaggle training database</em> used to train the neural network weights. In contrast, the left-hand PACS viewer displays the <em>radiologist's active patient cases</em> for real-time diagnosis. You can explore sample scans from this benchmark below and click <strong>"Load into PACS"</strong> to inspect them!
+          </p>
+        </div>
+      </div>
+
       {/* Dataset Selection Tabs */}
       <div className="dataset-selector-grid">
         {KAGGLE_DATASETS.map((ds) => (
@@ -344,6 +366,42 @@ export const TrainingConsoleTab: React.FC = () => {
           </button>
         ))}
       </div>
+
+      {/* Interactive Kaggle Dataset Sample Explorer */}
+      {selectedDataset.sampleStudies && selectedDataset.sampleStudies.length > 0 && (
+        <div className="console-panel">
+          <div className="panel-title-row space-between">
+            <div className="title-with-icon">
+              <Eye size={14} className="text-cyan" />
+              <h5>Browse Dataset Samples (Click to Load into Viewport)</h5>
+            </div>
+            <span className="sample-count-pill font-mono">
+              {selectedDataset.sampleStudies.length} Samples
+            </span>
+          </div>
+          <div className="kaggle-samples-gallery">
+            {selectedDataset.sampleStudies.map((sample) => (
+              <div key={sample.id} className="kaggle-sample-card">
+                <div className="sample-img-wrap">
+                  <img src={sample.thumbnailUrl} alt={sample.label} className="sample-img" />
+                </div>
+                <div className="sample-details">
+                  <div className="sample-filename font-mono">{sample.filename}</div>
+                  <div className="sample-label-tag">{sample.label}</div>
+                  <div className="sample-patient font-mono">{sample.patientId}</div>
+                  <button
+                    className="btn-load-sample"
+                    onClick={() => onSelectStudyById && onSelectStudyById(sample.studyId)}
+                  >
+                    <ExternalLink size={12} />
+                    <span>Load into PACS</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Class Distribution Histogram */}
       <div className="console-panel">
@@ -705,9 +763,133 @@ export const TrainingConsoleTab: React.FC = () => {
           color: var(--text-primary);
         }
 
-        .ds-meta {
-          font-size: 0.7rem;
+        .dataset-faq-box {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 10px 12px;
+          background: rgba(6, 182, 212, 0.07);
+          border: 1px solid rgba(6, 182, 212, 0.25);
+          border-left: 3px solid var(--cyan-primary);
+          border-radius: var(--radius-sm);
+        }
+
+        .faq-icon-wrap {
+          color: var(--cyan-bright);
+          margin-top: 2px;
+          flex-shrink: 0;
+        }
+
+        .faq-content {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .faq-question {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: var(--cyan-bright);
+        }
+
+        .faq-answer {
+          font-size: 0.73rem;
+          color: var(--text-secondary);
+          line-height: 1.4;
+        }
+
+        .sample-count-pill {
+          font-size: 0.68rem;
+          color: var(--cyan-bright);
+          background: rgba(6, 182, 212, 0.12);
+          padding: 2px 7px;
+          border-radius: 999px;
+        }
+
+        .kaggle-samples-gallery {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+          gap: 10px;
+        }
+
+        .kaggle-sample-card {
+          display: flex;
+          flex-direction: column;
+          background: rgba(18, 28, 51, 0.7);
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          transition: all 0.2s ease;
+        }
+
+        .kaggle-sample-card:hover {
+          border-color: rgba(6, 182, 212, 0.4);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .sample-img-wrap {
+          height: 110px;
+          background: #000;
+          overflow: hidden;
+        }
+
+        .sample-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          filter: contrast(1.15);
+        }
+
+        .sample-details {
+          padding: 8px 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .sample-filename {
+          font-size: 0.65rem;
           color: var(--text-muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .sample-label-tag {
+          font-size: 0.72rem;
+          font-weight: 700;
+          color: #fca5a5;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .sample-patient {
+          font-size: 0.65rem;
+          color: var(--text-secondary);
+        }
+
+        .btn-load-sample {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          margin-top: 4px;
+          padding: 4px 8px;
+          background: rgba(6, 182, 212, 0.15);
+          border: 1px solid rgba(6, 182, 212, 0.3);
+          border-radius: 4px;
+          color: var(--cyan-bright);
+          font-size: 0.7rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .btn-load-sample:hover {
+          background: var(--cyan-primary);
+          color: #000000;
         }
 
         .console-panel {

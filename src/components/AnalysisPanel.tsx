@@ -13,6 +13,7 @@ interface AnalysisPanelProps {
   hasAnalyzed: boolean;
   isAnalyzing: boolean;
   onRunAnalysis: () => void;
+  onSelectStudyById?: (studyId: string) => void;
 }
 
 export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
@@ -22,6 +23,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   hasAnalyzed,
   isAnalyzing,
   onRunAnalysis,
+  onSelectStudyById,
 }) => {
   return (
     <aside className="analysis-sidebar-panel">
@@ -80,7 +82,14 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           />
         )}
         {activeTab === 'metadata' && <DicomMetadataTab study={study} />}
-        {activeTab === 'training' && <TrainingConsoleTab />}
+        {activeTab === 'training' && (
+          <TrainingConsoleTab
+            onSelectStudyById={(id) => {
+              if (onSelectStudyById) onSelectStudyById(id);
+              setActiveTab('findings');
+            }}
+          />
+        )}
       </div>
 
       <style>{`

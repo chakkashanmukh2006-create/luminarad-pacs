@@ -44,6 +44,32 @@ export const KAGGLE_DATASETS: KaggleDataset[] = [
     ],
     description: 'The standard global benchmark for multi-label chest pathology screening released by the NIH Clinical Center. Contains high-resolution PNG images with NLP-mined diagnostic radiologist reports.',
     recommendedBackbones: ['DenseNet-121 (CheXNet)', 'ResNet-50', 'Vision Transformer (ViT-B/16)', 'EfficientNet-B4'],
+    sampleStudies: [
+      {
+        id: 'nih-sample-1',
+        studyId: 'STUDY-CXR-98765',
+        filename: '00009876_001.png',
+        label: 'Nodule / Neoplasm',
+        patientId: 'PT-9876543',
+        thumbnailUrl: '/samples/chest_nodule_cancer.jpg',
+      },
+      {
+        id: 'nih-sample-2',
+        studyId: 'STUDY-CXR-38063',
+        filename: '00038063_005.png',
+        label: 'Cardiomegaly / Effusion',
+        patientId: 'PT-3806305',
+        thumbnailUrl: '/samples/chest_cardiomegaly.jpg',
+      },
+      {
+        id: 'nih-sample-3',
+        studyId: 'STUDY-CXR-12345',
+        filename: '00012345_000.png',
+        label: 'No Finding (Normal)',
+        patientId: 'PT-1234567',
+        thumbnailUrl: '/samples/chest_normal.jpg',
+      },
+    ],
   },
   {
     id: 'stanford-chexpert',
@@ -107,6 +133,16 @@ export const KAGGLE_DATASETS: KaggleDataset[] = [
     ],
     description: 'One of the largest bone X-ray anomaly detection datasets globally, covering upper and lower extremities (femur, tibia, knee, wrist, forearm, humerus, finger, shoulder) labeled as normal vs. abnormal by board-certified radiologists.',
     recommendedBackbones: ['ResNet-50', 'DenseNet-169', 'MobileNet-V3', 'EfficientNet-V2'],
+    sampleStudies: [
+      {
+        id: 'mura-sample-1',
+        studyId: 'STUDY-ORTHO-20074',
+        filename: 'patient20074_study1_positive.png',
+        label: 'Acute Femur Fracture',
+        patientId: 'PT-2007489',
+        thumbnailUrl: '/samples/leg_femur_fracture.jpg',
+      },
+    ],
   },
   {
     id: 'rsna-pneumonia-kaggle',
